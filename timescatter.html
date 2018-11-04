@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <script src="./js/jquery/1.9.1/jquery.min.js"></script>
+    <script src="./js/chartjs/2.7.3/Chart.bundle.min.js"></script>
+    <title>Chart.jsのテスト time scatter</title>
+</head>
+<body>
+    <!-- ここにグラフが描画されます -->
+    <canvas id="myChart"></canvas>
+
+<script>
+$(function(){
+
+    //サンプルなので最初に１回表示したら完了です。
+    graph();
+
+    function graph()
+    {
+        //サーバーからデータを受け取る
+        $.get("_json.php", function(data) {
+            //alert(data); //php側のエラーをチェックする場合
+            var jdata = JSON.parse(data);
+
+            //phpから渡されたx値は1970/01/01 00:00:00からの経過時間秒なのでdate型に置き換える
+            var l = jdata.length;
+            for(var i=0; i<l; i++) {
+                var m = jdata[i].data.length;
+                for(var j=0; j<m; j++) {
+                    //javascriptのDate基準値は1970/01/01 00:00:00からの経過時間ミリ秒
+                    jdata[i].data[j].x = new Date(jdata[i].data[j].x * 1000);
+                }
+            }
+
+            //グラフパラメータの準備
+            var params = {
+                type: 'scatter',
+                data: {
+                    datasets: jdata
+                },
+                options: {
+                    scales: {
+                        xAxes: [{
+                            type: 'time',
+                            time: {
+                                displayFormats: {
+                                    //x軸の書式
+                                    hour: 'D日 H:00',//１日に納まる場合
+                                    day: 'MM/D H時'  //複数日の場合
+                                }
+                            }
+                        }]
+                    },
+                    tooltips: {
+                        titleFontSize: 12,
+                        bodyFontSize: 12,
+                        callbacks: {
+                            label: function (tooltipItem, data){
+                                //カーソルをあてたときのツールチップ
+                                var point = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+                                var dt = new Date(point.x);
+                                return point.y.toFixed(1) + '℃ ' + dt.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            };
+
+            //グラフの作成
+            var ctx = document.getElementById("myChart").getContext('2d');
+            var scatterChart = new Chart(ctx, params);
+        });
+    }
+});
+</script>
+</body>
+</html>
